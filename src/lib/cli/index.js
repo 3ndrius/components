@@ -26,6 +26,8 @@ class CLI {
     this._.status.message = 'Running'
     this._.status.loadingDots = ''
     this._.status.loadingDotCount = 0
+    // Timers
+    this._.timers = {}
   }
 
   config(config) {
@@ -34,9 +36,16 @@ class CLI {
     if (typeof config.useTimer === 'boolean') {
       this._.useTimer = config.useTimer
     }
+    // Start seconds timer (this keeps the process open until canceled)
+    const self = this
+    this._.timers.seconds = setInterval(() => {
+      self._.seconds++
+    }, 1000)
   }
 
   close(reason, message) {
+    // Cancel seconds timer
+    clearInterval(this._.timers.seconds)
     // Skip if not active
     process.stdout.write(ansiEscapes.cursorShow)
     if (!this.isStatusEngineActive()) {
@@ -334,11 +343,6 @@ process.stdout.write(ansiEscapes.cursorHide)
 
 // Create a single instance
 const cli = new CLI()
-
-// Count seconds
-setInterval(() => {
-  cli._.seconds++
-}, 1000)
 
 // Event Handler: Control + C
 process.on('SIGINT', async function() {

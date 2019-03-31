@@ -3,7 +3,7 @@ const ramda = require('ramda')
 const fs = require('./fs')
 const sleep = require('./sleep')
 const errorHandler = require('./errorHandler')
-const prepareCredentials = require('./prepareCredentials')
+const addEnvVarsToCredentials = require('./addEnvVarsToCredentials')
 const titelize = require('./titelize')
 
 module.exports = {
@@ -11,7 +11,7 @@ module.exports = {
   ...fs,
   sleep,
   errorHandler,
-  prepareCredentials,
+  addEnvVarsToCredentials,
   titelize,
   chalk
 }

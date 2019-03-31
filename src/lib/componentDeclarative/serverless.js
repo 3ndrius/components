@@ -98,6 +98,8 @@ class ComponentDeclarative extends Component {
     }
 
     logOutputs(this.cli, outputs)
+
+    return outputs
   }
 
   /*

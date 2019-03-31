@@ -4,6 +4,7 @@
 
 const { pick } = require('ramda')
 const Component = require('./lib/component/serverless')
+const run = require('./lib/run')
 const utils = require('./utils')
 
 // choose useful utils to export for component author
@@ -24,6 +25,7 @@ const utilsToExport = [
 ]
 
 module.exports = {
+  run,
   Component,
   ...pick(utilsToExport, utils)
 }

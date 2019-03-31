@@ -9,7 +9,7 @@ const {
   readFile,
   coreComponentExists,
   loadComponent,
-  prepareCredentials
+  addEnvVarsToCredentials
 } = require('../utils')
 
 /**
@@ -18,8 +18,7 @@ const {
  * @param {Object} config - Configuration
  */
 
-const runProgrammatic = async (filePath, config, cli) => {
-  let result
+const runProgrammatic = async (filePath, config) => {
 
   // Load Component
   const context = new Context(config)
@@ -27,12 +26,12 @@ const runProgrammatic = async (filePath, config, cli) => {
   const Component = require(filePath)
 
   // Config CLI
-  cli.config({
+  cliInstance.config({
     stage: config.stage,
     parentComponent: Component.name
   })
 
-  const component = new Component({ context, cli })
+  const component = new Component({ context, cli: cliInstance })
 
   try {
     // If method was provided, but doesn't exist, throw error
@@ -41,20 +40,13 @@ const runProgrammatic = async (filePath, config, cli) => {
     }
 
     if (!config.method) {
-      result = await component()
+      return await component()
     } else {
-      result = await component[config.method]()
+      return await component[config.method]()
     }
   } catch (error) {
     return errorHandler(error, Component.name)
   }
-
-  if (!context.watch) {
-    // Cleanup CLI
-    cli.close('done')
-  }
-
-  return result
 }
 
 /**
@@ -63,8 +55,8 @@ const runProgrammatic = async (filePath, config, cli) => {
  * @param {Object} config - Configuration
  */
 
-const runDeclarative = async (filePath, config, cli) => {
-  let Component, component, result
+const runDeclarative = async (filePath, config) => {
+  let Component, component
 
   const context = new Context(config, path.basename(filePath))
 
@@ -73,8 +65,9 @@ const runDeclarative = async (filePath, config, cli) => {
 
   // If no config.method or config.instance has been provided, run the default method...
   if (!config.instance && !config.method) {
+
     // Config CLI
-    cli.config({
+    cliInstance.config({
       stage: config.stage,
       parentComponent: fileContent.name
     })
@@ -83,9 +76,9 @@ const runDeclarative = async (filePath, config, cli) => {
       component = new ComponentDeclarative({
         name: fileContent.name, // Must pass in name to ComponentDeclaractive
         context,
-        cli
+        cli: cliInstance,
       })
-      result = await component()
+      return await component()
     } catch (error) {
       return errorHandler(error, fileContent.name)
     }
@@ -94,7 +87,7 @@ const runDeclarative = async (filePath, config, cli) => {
   // If config.method has been provided, run that...
   if (!config.instance && config.method) {
     // Config CLI
-    cli.config({
+    cliInstance.config({
       stage: config.stage,
       parentComponent: fileContent.name
     })
@@ -102,10 +95,10 @@ const runDeclarative = async (filePath, config, cli) => {
     component = new ComponentDeclarative({
       name: fileContent.name, // Must pass in name to ComponentDeclaractive
       context,
-      cli
+      cli: cliInstance,
     })
     try {
-      result = await component[config.method]()
+      return await component[config.method]()
     } catch (error) {
       return errorHandler(error, fileContent.name)
     }
@@ -136,30 +129,23 @@ const runDeclarative = async (filePath, config, cli) => {
     }
 
     // Config CLI
-    cli.config({
+    cliInstance.config({
       stage: config.stage,
-      parentComponent: `${instanceName}`
+      parentComponent: fileContent.name
     })
 
     Component = await loadComponent(componentName)
     component = new Component({
       id: `${context.stage}.${fileContent.name}.${instanceName}`, // Construct correct name of child Component
       context,
-      cli
+      cli: cliInstance,
     })
     try {
-      result = await component[config.method]()
+      return await component[config.method]()
     } catch (error) {
       return errorHandler(error, componentName)
     }
   }
-
-  if (!context.watch) {
-    // Cleanup CLI
-    cli.close('done')
-  }
-
-  return result
 }
 
 /**
@@ -174,16 +160,14 @@ const runDeclarative = async (filePath, config, cli) => {
  * @param {String} config.debug - If you wish to turn on debug mode.
  */
 
-const run = async (config = {}, cli = cliInstance) => {
+const run = async (config = {}) => {
+
   // Configuration defaults
   config.root = config.root || process.cwd()
   config.stage = config.stage || 'dev'
   config.credentials = config.credentials || {}
   config.instance = config.instance || null
   config.method = config.method || null
-  config.verbose = config.verbose || false
-  config.debug = config.debug || false
-  config.watch = config.watch || false
 
   if (config.verbose) {
     process.env.SERVERLESS_VERBOSE = true
@@ -194,39 +178,48 @@ const run = async (config = {}, cli = cliInstance) => {
 
   // Load env vars
   let envVars = {}
-  const defaultEnvFilePath = path.join(process.cwd(), `.env`)
-  const stageEnvFilePath = path.join(process.cwd(), `.env.${config.stage}`)
+  const defaultEnvFilePath = path.join(config.root, `.env`)
+  const stageEnvFilePath = path.join(config.root, `.env.${config.stage}`)
   if (await fileExists(stageEnvFilePath)) {
     envVars = dotenv.config({ path: path.resolve(stageEnvFilePath) }).parsed || {}
   } else if (await fileExists(defaultEnvFilePath)) {
     envVars = dotenv.config({ path: path.resolve(defaultEnvFilePath) }).parsed || {}
   }
 
-  // Prepare credentials
-  config.credentials = prepareCredentials(envVars)
+  // Add environment variables to credentials
+  config.credentials = addEnvVarsToCredentials(envVars, config.credentials)
 
   // Determine programmatic or declarative usage
-  const serverlessJsFilePath = path.join(process.cwd(), 'serverless.js')
-  const serverlessYmlFilePath = path.join(process.cwd(), 'serverless.yml')
-  const serverlessYamlFilePath = path.join(process.cwd(), 'serverless.yaml')
-  const serverlessJsonFilePath = path.join(process.cwd(), 'serverless.json')
+  const serverlessJsFilePath = path.join(config.root, 'serverless.js')
+  const serverlessYmlFilePath = path.join(config.root, 'serverless.yml')
+  const serverlessYamlFilePath = path.join(config.root, 'serverless.yaml')
+  const serverlessJsonFilePath = path.join(config.root, 'serverless.json')
 
+  let outputs
   try {
     if (await fileExists(serverlessJsFilePath)) {
-      return await runProgrammatic(serverlessJsFilePath, config, cli)
+      outputs = await runProgrammatic(serverlessJsFilePath, config)
     } else if (await fileExists(serverlessYmlFilePath)) {
-      return await runDeclarative(serverlessYmlFilePath, config, cli)
+      outputs = await runDeclarative(serverlessYmlFilePath, config)
     } else if (await fileExists(serverlessYamlFilePath)) {
-      return await runDeclarative(serverlessYamlFilePath, config, cli)
+      outputs = await runDeclarative(serverlessYamlFilePath, config)
     } else if (await fileExists(serverlessJsonFilePath)) {
-      return await runDeclarative(serverlessJsonFilePath, config, cli)
+      outputs = await runDeclarative(serverlessJsonFilePath, config)
+    } else {
+      throw new Error(
+        `No Serverless file (serverless.js, serverless.yml, serverless.yaml or serverless.json) found in ${config.root}`
+      )
     }
-    throw new Error(
-      `No Serverless file (serverless.js, serverless.yml, serverless.yaml or serverless.json) found in ${process.cwd()}`
-    )
   } catch (error) {
     return errorHandler(error, 'Serverless Components')
   }
+
+  // Cleanup CLI
+  setTimeout(() => {
+    cliInstance.close('done')
+  }, 200)
+
+  return outputs
 }
 
 /**
