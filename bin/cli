@@ -24,4 +24,6 @@ config.cli.watch = args.w || args.watch ? args.w || args.watch : false
     return watch(config)
   }
   return run(config)
-})().catch((e) => console.log(e.stack))
+})()
+.catch((e) => console.log(e.stack))
+// .then(() => process.exit(0))

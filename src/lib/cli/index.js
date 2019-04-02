@@ -46,11 +46,12 @@ class CLI {
   close(reason, message) {
     // Cancel seconds timer
     clearInterval(this._.timers.seconds)
+
     // Skip if not active
     process.stdout.write(ansiEscapes.cursorShow)
     if (!this.isStatusEngineActive()) {
       console.log() // eslint-disable-line
-      process.exit(0)
+      // process.exit(0)
       return
     }
     return this.statusEngineStop(reason, message)
@@ -120,11 +121,11 @@ class CLI {
     process.stdout.write(ansiEscapes.cursorLeft)
     process.stdout.write(ansiEscapes.cursorShow)
 
-    if (reason === 'error') {
-      process.exit(1)
-    } else {
-      process.exit(0)
-    }
+    // if (reason === 'error') {
+    //   process.exit(1)
+    // } else {
+    //   process.exit(0)
+    // }
   }
 
   renderStatusEngineStatement(status) {

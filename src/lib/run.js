@@ -26,13 +26,13 @@ const runProgrammatic = async (filePath, config) => {
   const Component = require(filePath)
 
   // Config CLI
-  cliInstance.config({
-    stage: config.stage,
-    parentComponent: Component.name
-  })
-
-  const component = new Component({ context, cli: cliInstance })
-
+  // cliInstance.config({
+  //   stage: config.stage,
+  //   parentComponent: Component.name
+  // })
+  //
+  // const component = new Component({ context, cli: cliInstance })
+return
   try {
     // If method was provided, but doesn't exist, throw error
     if (config.method && !component[config.method]) {
@@ -215,9 +215,7 @@ const run = async (config = {}) => {
   }
 
   // Cleanup CLI
-  setTimeout(() => {
-    cliInstance.close('done')
-  }, 200)
+  cliInstance.close('done')
 
   return outputs
 }
