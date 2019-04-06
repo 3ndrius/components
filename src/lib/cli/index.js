@@ -49,9 +49,9 @@ class CLI {
 
     // Skip if not active
     process.stdout.write(ansiEscapes.cursorShow)
+
     if (!this.isStatusEngineActive()) {
       console.log() // eslint-disable-line
-      // process.exit(0)
       return
     }
     return this.statusEngineStop(reason, message)
@@ -120,12 +120,6 @@ class CLI {
     console.log(os.EOL) // eslint-disable-line
     process.stdout.write(ansiEscapes.cursorLeft)
     process.stdout.write(ansiEscapes.cursorShow)
-
-    // if (reason === 'error') {
-    //   process.exit(1)
-    // } else {
-    //   process.exit(0)
-    // }
   }
 
   renderStatusEngineStatement(status) {

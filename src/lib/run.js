@@ -20,19 +20,17 @@ const {
 
 const runProgrammatic = async (filePath, config) => {
 
-  // Load Component
   const context = new Context(config)
-
   const Component = require(filePath)
 
   // Config CLI
-  // cliInstance.config({
-  //   stage: config.stage,
-  //   parentComponent: Component.name
-  // })
-  //
-  // const component = new Component({ context, cli: cliInstance })
-return
+  cliInstance.config({
+    stage: config.stage,
+    parentComponent: Component.name
+  })
+
+  const component = new Component({ context, cli: cliInstance })
+
   try {
     // If method was provided, but doesn't exist, throw error
     if (config.method && !component[config.method]) {
@@ -86,6 +84,7 @@ const runDeclarative = async (filePath, config) => {
 
   // If config.method has been provided, run that...
   if (!config.instance && config.method) {
+
     // Config CLI
     cliInstance.config({
       stage: config.stage,
